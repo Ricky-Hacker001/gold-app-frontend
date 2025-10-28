@@ -16,32 +16,34 @@ import AdminLayout from './components/admin/AdminLayout';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import ManageUsersPage from './pages/ManageUsersPage';
 import ManageTransactionsPage from './pages/ManageTransactionsPage';
-import ManageAdminsPage from './pages/ManageAdminsPage'; // <-- 1. IMPORT THIS NEW PAGE
+import ManageAdminsPage from './pages/ManageAdminsPage';
+import AdminWithdrawalsPage from './pages/AdminWithdrawalsPage';
+import PayoutsAwaitingCompletionPage from './pages/PayoutsAwaitingCompletionPage';
+
+// --- Payment Status Page (IMPORT THIS) ---
+import PaymentStatusPage from './pages/PaymentStatusPage';
+
 
 function App() {
   return (
     <Routes>
       {/* ======================================= */}
-      {/* Public Route                    */}
+      {/* Public Routes                   */}
       {/* ======================================= */}
-      {/* Login and Register Page */}
       <Route path="/" element={<AuthPage />} />
+
+      {/* --- ADD THIS ROUTE --- */}
+      <Route path="/payment-status" element={<PaymentStatusPage />} />
+      {/* --- END ADD --- */}
 
 
       {/* ======================================= */}
       {/* User Routes (Protected)         */}
       {/* ======================================= */}
       <Route path="/dashboard" element={<DashboardLayout />}>
-        {/* Main dashboard page */}
         <Route index element={<DashboardPage />} />
-        
-        {/* User's portfolio page */}
         <Route path="portfolio" element={<PortfolioPage />} />
-        
-        {/* User's transaction history page */}
         <Route path="history" element={<HistoryPage />} />
-        
-        {/* User's profile/settings page */}
         <Route path="settings" element={<SettingsPage />} />
       </Route>
 
@@ -50,19 +52,14 @@ function App() {
       {/* Admin Routes (Protected)        */}
       {/* ======================================= */}
       <Route path="/admin" element={<AdminLayout />}>
-        {/* Admin's main dashboard (price updates) */}
         <Route path="dashboard" element={<AdminDashboardPage />} />
-        
-        {/* Page to see all users */}
         <Route path="users" element={<ManageUsersPage />} />
-
-        {/* --- 2. ADD THE NEW ROUTE HERE --- */}
         <Route path="admins" element={<ManageAdminsPage />} />
-        
-        {/* Page to see all transactions */}
+        <Route path="withdrawals" element={<AdminWithdrawalsPage />} />
+        <Route path="payouts-awaiting" element={<PayoutsAwaitingCompletionPage />} />
         <Route path="transactions" element={<ManageTransactionsPage />} />
       </Route>
-      
+
     </Routes>
   );
 }

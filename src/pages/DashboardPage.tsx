@@ -6,12 +6,9 @@ import PriceChart from '../components/dashboard/PriceChart';
 declare global {
   interface Window {
     Cashfree?: any; // The constructor (Uppercase C)
-    cashfree?: any; // Keep lowercase just in case (though likely unused now)
+    cashfree?: any; // Keep lowercase just in case (though likely unused)
   }
 }
-
-// Ensure you are using the v3 SDK URL
-const CASHFREE_SDK_URL = 'https://sdk.cashfree.com/js/v3/cashfree.js';
 
 const DashboardPage: React.FC = () => {
   // --- States for price fetching ---
@@ -59,7 +56,7 @@ const DashboardPage: React.FC = () => {
     }
   };
 
-  // --- Handle purchase submission (Nested try/catch for checkout) ---
+  // --- Handle purchase submission (Using Uppercase C constructor and _self redirect) ---
   const handleBuySubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setBuyMessage(null);
@@ -72,7 +69,6 @@ const DashboardPage: React.FC = () => {
       return;
     }
 
-    console.log("Checking for window.Cashfree (uppercase constructor):", typeof window.Cashfree);
     // Check for window.Cashfree (Uppercase C - the constructor)
     if (typeof window.Cashfree === 'undefined') {
         console.error("handleBuySubmit: window.Cashfree constructor not found!");
@@ -81,49 +77,45 @@ const DashboardPage: React.FC = () => {
         return; // Stop execution
     }
 
-    let paymentSessionId: string | null = null; // Declare here
+    let paymentSessionId: string | null = null;
 
     try {
-      // --- Step 1: Call Backend ---
+      // 1. Call Backend to get paymentSessionId
       console.log("Calling backend to create order for amount:", amount);
       const res = await api.post('/buy/create-order', {
         amountInRupees: amount,
       });
-      paymentSessionId = res.data.paymentSessionId; // Assign received ID
+      paymentSessionId = res.data.paymentSessionId;
       console.log("Received paymentSessionId:", paymentSessionId);
 
-      // --- Step 2: Try to Launch Checkout ---
-      console.log("Attempting to launch Cashfree checkout by creating an instance...");
       if (!paymentSessionId) {
         throw new Error("Payment Session ID not received from backend.");
       }
 
-      const cf = new window.Cashfree(paymentSessionId);
-      console.log("Cashfree instance created. Calling cf.checkout()...");
+      // Initialize Frontend SDK Instance
+      console.log("Initializing Frontend Cashfree SDK instance with mode: sandbox...");
+      const cashfree = new window.Cashfree({
+          mode: "sandbox" // Or "production" based on your env
+      });
+      console.log("Frontend instance created.");
 
-      // Add a specific try/catch around the checkout call
-      try {
-        cf.checkout();
-        console.log("cf.checkout() called successfully. Redirect should happen.");
-        // Don't reset isSubmitting here, rely on page redirect
-      } catch (checkoutError: any) {
-        console.error("Error directly from cf.checkout():", checkoutError);
-        setBuyMessage({ type: 'error', text: `Checkout launch error: ${checkoutError.message || 'Unknown checkout error'}` });
-        setIsSubmitting(false); // Reset on checkout-specific error
-        return; // Stop further execution
-      }
+
+      // Call checkout on the instance WITH _self redirect target
+      console.log("Attempting to launch Cashfree checkout with redirectTarget: _self...");
+      cashfree.checkout({
+          paymentSessionId: paymentSessionId,
+          redirectTarget: "_self" // <--- FORCE FULL PAGE REDIRECT
+      });
+      console.log("Cashfree checkout called (expecting full page redirect).");
+      // Button will stay 'Initializing...' because the page should navigate away
 
     } catch (err: any) {
-      // Catch errors from backend call or if session ID was missing
-      console.error("Error during payment initiation:", err);
+      console.error("Error during payment initiation:", err); // Log the actual error
       const msg = err.response?.data?.message || err.message || 'Payment initiation failed.';
       setBuyMessage({ type: 'error', text: msg });
-      setIsSubmitting(false); // Reset on general errors
+      setIsSubmitting(false); // Re-enable button on ANY failure
     }
-    // Note: If checkout call succeeds but doesn't redirect (silent failure),
-    // isSubmitting will remain true.
   };
-
 
   // --- Helper to display price ---
   const renderPrice = () => {
