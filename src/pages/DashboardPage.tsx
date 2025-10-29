@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import api from '../utils/api'; // Use our API helper
-import PriceChart from '../components/dashboard/PriceChart';
+import api from '../utils/api'; // Restored original import
+import PriceChart from '../components/dashboard/PriceChart'; // Restored original import
 
-// Update the declaration to prioritize the uppercase C constructor
+// Update the declaration for the global Cashfree object
 declare global {
   interface Window {
     Cashfree?: any; // The constructor (Uppercase C)
-    cashfree?: any; // Keep lowercase just in case (though likely unused)
   }
 }
 
@@ -40,8 +39,6 @@ const DashboardPage: React.FC = () => {
     fetchPrice();
   }, []);
 
-  // --- Effect 2 (Dynamic SDK loading) REMOVED - Assuming script is in index.html ---
-
   // --- Update grams calculation ---
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const amount = e.target.value;
@@ -56,7 +53,7 @@ const DashboardPage: React.FC = () => {
     }
   };
 
-  // --- Handle purchase submission (Using Uppercase C constructor and _self redirect) ---
+  // --- Handle purchase submission (Uses Production Mode) ---
   const handleBuySubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setBuyMessage(null);
@@ -69,7 +66,6 @@ const DashboardPage: React.FC = () => {
       return;
     }
 
-    // Check for window.Cashfree (Uppercase C - the constructor)
     if (typeof window.Cashfree === 'undefined') {
         console.error("handleBuySubmit: window.Cashfree constructor not found!");
         setBuyMessage({ type: 'error', text: 'Payment SDK failed to load. Please refresh the page and try again.' });
@@ -93,9 +89,10 @@ const DashboardPage: React.FC = () => {
       }
 
       // Initialize Frontend SDK Instance
-      console.log("Initializing Frontend Cashfree SDK instance with mode: sandbox...");
+      console.log("Initializing Frontend Cashfree SDK instance with mode: production...");
       const cashfree = new window.Cashfree({
-          mode: "sandbox" // Or "production" based on your env
+          // *** FINAL FIX: Set mode to 'production' for Live Keys ***
+          mode: "production" 
       });
       console.log("Frontend instance created.");
 
@@ -104,13 +101,13 @@ const DashboardPage: React.FC = () => {
       console.log("Attempting to launch Cashfree checkout with redirectTarget: _self...");
       cashfree.checkout({
           paymentSessionId: paymentSessionId,
-          redirectTarget: "_self" // <--- FORCE FULL PAGE REDIRECT
+          redirectTarget: "_self" // FORCE FULL PAGE REDIRECT
       });
       console.log("Cashfree checkout called (expecting full page redirect).");
       // Button will stay 'Initializing...' because the page should navigate away
 
     } catch (err: any) {
-      console.error("Error during payment initiation:", err); // Log the actual error
+      console.error("Error during payment initiation:", err); 
       const msg = err.response?.data?.message || err.message || 'Payment initiation failed.';
       setBuyMessage({ type: 'error', text: msg });
       setIsSubmitting(false); // Re-enable button on ANY failure
@@ -138,21 +135,19 @@ const DashboardPage: React.FC = () => {
   };
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold text-white mb-6">Dashboard</h1>
-
-      {/* Removed SDK Error Display */}
+    <div className="min-h-screen bg-slate-900 p-4 sm:p-8">
+      <h1 className="text-3xl font-bold text-white mb-6">Gold Dashboard</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
         {/* --- Gold Price Display Card --- */}
-        <div className="md:col-span-1 bg-slate-800 p-6 rounded-lg shadow-lg">
+        <div className="md:col-span-1 bg-slate-800 p-6 rounded-lg shadow-2xl border border-yellow-500/20">
           <h2 className="text-sm font-medium text-gray-400 mb-1">Current Gold Price (per gram)</h2>
           {renderPrice()}
         </div>
 
         {/* --- Buy Gold Form Card --- */}
-        <div className="md:col-span-2 bg-slate-800 p-6 rounded-lg shadow-lg">
+        <div className="md:col-span-2 bg-slate-800 p-6 rounded-lg shadow-2xl border border-slate-600">
           <h2 className="text-2xl font-bold text-white mb-4">Buy Gold</h2>
 
           <form onSubmit={handleBuySubmit}>
@@ -176,13 +171,13 @@ const DashboardPage: React.FC = () => {
             {/* Calculated Grams Display */}
             <div className="mb-4">
               <p className="text-sm text-gray-400">You will get (approx.):</p>
-              <p className="text-2xl font-bold text-white">{gramsToBuy} g</p>
+              <p className="text-2xl font-bold text-yellow-400">{gramsToBuy} g</p>
             </div>
 
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full py-2 px-4 bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-bold rounded-md transition-opacity disabled:opacity-50"
+              className="w-full py-3 px-4 bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-bold rounded-lg shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={loadingPrice || isSubmitting || !goldPrice}
             >
               {getButtonText()}
@@ -190,7 +185,7 @@ const DashboardPage: React.FC = () => {
 
             {/* Error Message Display Area */}
             {buyMessage && (
-              <div className="mt-4 p-3 rounded-md text-sm bg-red-800 border border-red-600 text-white">
+              <div className="mt-4 p-3 rounded-lg text-sm bg-red-800 border border-red-600 text-white">
                 {buyMessage.text}
               </div>
             )}
@@ -198,7 +193,7 @@ const DashboardPage: React.FC = () => {
         </div>
 
         {/* --- Price Chart Card --- */}
-        <div className="md:col-span-3 bg-slate-800 p-6 rounded-lg shadow-lg">
+        <div className="md:col-span-3 bg-slate-800 p-6 rounded-lg shadow-2xl border border-slate-600">
           <h2 className="text-2xl font-bold text-white mb-4">Price Chart (7 Days)</h2>
           <PriceChart />
         </div>
